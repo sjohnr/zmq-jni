@@ -41,7 +41,7 @@ JNIEXPORT jlong JNICALL
 Java_org_zeromq_jni_ZMQ_zmq_1ctx_1new  (JNIEnv *env, jclass c)
 {
     void *context = zmq_ctx_new();
-    if(context)
+    if (context)
         return (jlong) context;
     return -1;
 }
@@ -70,7 +70,7 @@ JNIEXPORT jlong JNICALL
 Java_org_zeromq_jni_ZMQ_zmq_1socket (JNIEnv *env, jclass c, jlong context, jint type)
 {
     void *socket = zmq_socket((void *) context, type);
-    if(socket)
+    if (socket)
         return (jlong) socket;
     return -1;
 }
@@ -157,7 +157,6 @@ Java_org_zeromq_jni_ZMQ_zmq_1recv__JI (JNIEnv *env, jclass c, jlong socket, jint
     zmq_msg_close(&msg);
     return buf;
 }
-
 JNIEXPORT jint JNICALL
 Java_org_zeromq_jni_ZMQ_zmq_1recv__J_3BIII (JNIEnv *env, jclass c, jlong socket, jbyteArray buf, jint offset, jint len, jint flags)
 {
@@ -171,7 +170,7 @@ JNIEXPORT jint JNICALL
 Java_org_zeromq_jni_ZMQ_zmq_1send__JLjava_nio_ByteBuffer_2I (JNIEnv *env, jclass c, jlong socket, jobject buf, jint flags)
 {
     jbyte* data = (jbyte*) env->GetDirectBufferAddress(buf);
-    if(data == NULL)
+    if (data == NULL)
         return -1;
 
     int lim = env->CallIntMethod(buf, limitMID);
@@ -190,7 +189,7 @@ JNIEXPORT jint JNICALL
 Java_org_zeromq_jni_ZMQ_zmq_1recv__JLjava_nio_ByteBuffer_2I (JNIEnv *env, jclass c, jlong socket, jobject buf, jint flags)
 {
     jbyte* data = (jbyte*) env->GetDirectBufferAddress(buf);
-    if(data == NULL)
+    if (data == NULL)
         return -1;
 
     int lim = env->CallIntMethod(buf, limitMID);
@@ -261,10 +260,58 @@ Java_org_zeromq_jni_ZMQ_zmq_1getsockopt_1bytes (JNIEnv *env, jclass c, jlong soc
     return buf;
 }
 
-JNIEXPORT jint JNICALL
-Java_org_zeromq_jni_ZMQ_zmq_1poll (JNIEnv *env, jclass c, jlong items, jint count, jlong timeout)
+JNIEXPORT jlong JNICALL
+Java_org_zeromq_jni_ZMQ_zmq_1poller_1new (JNIEnv *env, jclass c)
 {
-    return zmq_poll ((zmq_pollitem_t *) items, count, timeout);
+    void *poller = zmq_poller_new ();
+    return (jlong) poller;
+}
+
+JNIEXPORT jint JNICALL
+Java_org_zeromq_jni_ZMQ_zmq_1poller_1add_1socket (JNIEnv *env, jclass c, jlong poller, jlong socket, jint events)
+{
+    return zmq_poller_add ((void *) poller, (void *) socket, NULL, events);
+}
+
+JNIEXPORT jint JNICALL
+Java_org_zeromq_jni_ZMQ_zmq_1poller_1remove_1socket (JNIEnv *env, jclass c, jlong poller, jlong socket)
+{
+    return zmq_poller_remove ((void *) poller, (void *) socket);
+}
+
+JNIEXPORT jint JNICALL
+Java_org_zeromq_jni_ZMQ_zmq_1poller_1add_1channel (JNIEnv *env, jclass c, jlong poller, jobject channel, jint events)
+{
+    jclass cls = env->GetObjectClass (channel);
+    jfieldID fid = env->GetFieldID (cls, "fdVal", "I");
+    env->DeleteLocalRef(cls);
+
+    int fd = env->GetIntField (channel, fid);
+    return zmq_poller_add_fd ((void *) poller, fd, NULL, events);
+}
+
+JNIEXPORT jint JNICALL
+Java_org_zeromq_jni_ZMQ_zmq_1poller_1remove_1channel (JNIEnv *env, jclass c, jlong poller, jobject channel)
+{
+    jclass cls = env->GetObjectClass (channel);
+    jfieldID fid = env->GetFieldID (cls, "fdVal", "I");
+    env->DeleteLocalRef(cls);
+
+    int fd = env->GetIntField (channel, fid);
+    return zmq_poller_remove_fd ((void *) poller, fd);
+}
+
+JNIEXPORT void JNICALL
+Java_org_zeromq_jni_ZMQ_zmq_1poller_1destroy (JNIEnv *env, jclass c, jlong poller)
+{
+    zmq_poller_destroy ((void *) poller);
+}
+
+JNIEXPORT jint JNICALL
+Java_org_zeromq_jni_ZMQ_zmq_1poll (JNIEnv *env, jclass c, jlong poller, jint count, jlong timeout)
+{
+    zmq_poller_event_t *events = new zmq_poller_event_t[count];
+    return zmq_poller_wait ((void *) poller, events, timeout);
 }
 
 JNIEXPORT jboolean JNICALL

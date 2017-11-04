@@ -8,6 +8,7 @@ package org.zeromq.jni;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.channels.SelectableChannel;
 
 public final class ZMQ
 {
@@ -67,7 +68,19 @@ public final class ZMQ
 
     public static native byte[] zmq_getsockopt_bytes(long socket, int option);
 
-    public static native int zmq_poll(long items, int count, long timeout);
+    public static native long zmq_poller_new();
+
+    public static native void zmq_poller_add_socket(long poller, long socket, int events);
+
+    public static native void zmq_poller_remove_socket(long poller, long socket);
+
+    public static native void zmq_poller_add_channel(long poller, SelectableChannel channel, int events);
+
+    public static native void zmq_poller_remove_channel(long poller, SelectableChannel channel);
+
+    public static native void zmq_poller_destroy(long poller);
+
+    public static native int zmq_poll(long poller, int count, long timeout);
 
     public static int zmq_poll(PollItemArray items, long timeout)
     {
@@ -77,7 +90,7 @@ public final class ZMQ
     public static native boolean zmq_z85_encode(CharBuffer dest, byte[] data);
 
     public static native boolean zmq_z85_decode(byte[] dest, String data);
-    
+
     public static native boolean zmq_curve_keypair(CharBuffer publicKey, CharBuffer secretKey);
 
     // Constants - Message options
